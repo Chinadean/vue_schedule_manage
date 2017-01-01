@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="schedule_manage.css">
+    <title>Schedule Manage</title>
+</head>
+<body>
+<div class="container">
+    <div class="schedule">
+        <div class="sch-header">
+
+        </div>
+        <div class="sch-body" id="sch_vue_tb">
+            <table class="sch-date" border="1">
+                <thead>
+                <tr>
+                    <th>Sun</th>
+                    <th>Mon</th>
+                    <th>Tue</th>
+                    <th>Wed</th>
+                    <th>Thu</th>
+                    <th>Fri</th>
+                    <th>Sat</th>
+                </tr>
+                </thead>
+                <tbody>
+                    <tr is="sch_tr" v-for="item in days" v-bind:tr_data="item"></tr>
+                </tbody>
+            </table>
+            <event_box></event_box>
+        </div>
+    </div>
+</div>
+<script src="https://unpkg.com/vue@2.1.8/dist/vue.js"></script>
+<script>
+    (function(){
+        var sch_tr= {
+            props: ['tr_data'],
+            template:'\
+            <tr>\
+                <td v-for="text in tr_data" v-bind:class="text===\'\'? \'\':\'sch-day\'">{{text}}</td>\
+            </tr>'
+        };
+        var event_box= {
+            props: ['schedule', 'date'],
+            template:'\
+            <div>\
+                111\
+            </div>',
+            computed: {
+                event_data: function(){
+
+                }
+            }
+        };
+        var sch_vue_tb = new Vue({
+            el: '#sch_vue_tb',
+            data: {
+                date: new Date(),
+                days: compute_date(this.date),
+                schedule: getSchedule()
+            },
+            components: {
+                sch_tr: sch_tr,
+                event_box: event_box
+            }
+        });
+        function getSchedule(){
+            // schedule range must be in the same month
+            return {
+                2016: {
+                    12: {
+                        20: { end:25, time_start:'9:30', time_end:'10:30', event:'do something'}
+                    }
+                }
+            }
+        }
+        // parse schedule in current month
+        function parseScheduleDate(schedule, date){
+            var schedule_arr = [];
+            var month = date.getMonth(),
+                    sch_obj;
+            var date_arr, start_date_arr, end_date_arr;
+            schedule.forEach(function(val, i){
+                date_arr = val.split('-');
+                start_date_arr = date_arr[0].split('.');
+                sch_obj = {
+                    start: {
+                        year: start_date_arr[0],
+                        month: start_date_arr[1],
+                        day: start_date_arr[2]
+                    },
+                    time: val.time,
+                    event: val.event
+                };
+                // is date range
+                if(date_arr[1]){
+                    end_date_arr = date_arr[1].split('.');
+                    sch_obj.end = {
+                        year: end_date_arr[0],
+                        month: end_date_arr[1],
+                        day: end_date_arr[2]
+                    };
+                }
+                // is current month
+                if(month == sch_obj.start.month){
+                    if(!sch_obj.end || sch_obj.end.month === sch_obj.start.month){
+                        schedule_arr.push(sch_obj);
+                    }
+                }
+                return schedule_arr;
+            });
+        }
+        function compute_date(date){
+            var date_arr = [],
+                    date_week_arr = [],
+                    date_obj = getDateData(date);
+            for(var i = 0; i < date_obj.day_week; i++){
+                date_week_arr[i] = '';
+            }
+            for(var j = 1; j <= date_obj.days; j++){
+                if(date_week_arr.length === 7){
+                    date_arr.push(date_week_arr);
+                    date_week_arr = [];
+                }
+                date_week_arr.push(j);
+                if(j == date_obj.days){
+                    for(var k = date_week_arr.length; k < 7; k++){
+                        date_week_arr[k] = '';
+                    }
+                    date_arr.push(date_week_arr);
+                }
+            }
+            return date_arr
+        }
+        function getDateData(date){
+            date || (date = new Date());
+            var year = date.getFullYear(),
+                    month = date.getMonth();
+            var isLeapYear = (year % 4 == 0) && (year % 100 != 0 || year % 400 == 0),
+                    days = (month === 2) ? (28 + isLeapYear) : 31 - month % 7 % 2;
+            date.setDate(1);
+            var day_week = date.getDay();
+            return {
+                days: days,
+                day_week: day_week
+            }
+        }
+        function getEle(selector, ele){
+            ele || (ele = document);
+            if(/^#.+/.test(selector)){
+                return ele.getElementById(selector);
+            }else if(/^\..+/.test(selector)){
+                return ele.getElementsByClassName(selector);
+            } else {
+                return ele.getElementsByTagName(selector);
+            }
+        }
+    })()
+</script>
+</body>
+</html>
