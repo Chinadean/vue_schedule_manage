@@ -1,28 +1,37 @@
 .container{
     margin: 20px auto;
     width: 500px;
+    height: 400px;
 }
+[v-cloak] {
+    display: none;
+    }
 .schedule{
+    height: 100%;
     text-align: center;
 }
 .sch-body{
+    height: 100%;
     position: relative;
 }
 .sch-date{
+    height: 100%;
     width: 100%;
     border-collapse: collapse;
 }
 .sch-date > thead > tr{
-    height: 30px;
+    height: 100%;
 }
 .sch-date > tbody > tr{
-    height: 60px;
+
 }
 .sch-event-box{
     position: absolute;
-    top: 20%;
-    left: 42.857142857142854%;
-    height: 30px;
-    width: 100px;
+    /*top: 20%;*/
+    /*left: 42.857142857142854%;*/
+    /*width: 100px;*/
     border: 1px solid;
+}
+.sch-event-box:hover{
+    cursor: pointer;
 }

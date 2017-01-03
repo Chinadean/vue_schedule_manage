@@ -13,26 +13,30 @@
         </div>
         <div class="sch-body" id="sch_vue_tb">
             <table class="sch-date" border="1">
-                <thead>
-                <tr>
-                    <th>Sun</th>
-                    <th>Mon</th>
-                    <th>Tue</th>
-                    <th>Wed</th>
-                    <th>Thu</th>
-                    <th>Fri</th>
-                    <th>Sat</th>
-                </tr>
+                <thead v-bind:style="{height:tr_scale * 0.5 + '%'}">
+                    <tr>
+                        <th>Sun</th>
+                        <th>Mon</th>
+                        <th>Tue</th>
+                        <th>Wed</th>
+                        <th>Thu</th>
+                        <th>Fri</th>
+                        <th>Sat</th>
+                    </tr>
                 </thead>
-                <tbody>
+                <tbody v-bind:style="{height:100 - tr_scale * 0.5 + '%'}">
                     <tr is="sch_tr" v-for="item in days" v-bind:tr_data="item"></tr>
                 </tbody>
             </table>
-            <event_box></event_box>
+            <div class="sch-event-box" v-for="data in event_data"
+                 v-bind:style="{top:data.top, left:data.left, width:data.width, height:tr_height*0.5+'%'}"
+                 v-on:click="showModal(data)" v-cloak>
+                {{data.event}}
+            </div>
         </div>
     </div>
 </div>
-<script src="https://unpkg.com/vue@2.1.8/dist/vue.js"></script>
+<script src="vue.js"></script>
 <script>
     (function(){
         var sch_tr= {
@@ -42,18 +46,6 @@
                 <td v-for="text in tr_data" v-bind:class="text===\'\'? \'\':\'sch-day\'">{{text}}</td>\
             </tr>'
         };
-        var event_box= {
-            props: ['schedule', 'date'],
-            template:'\
-            <div>\
-                111\
-            </div>',
-            computed: {
-                event_data: function(){
-
-                }
-            }
-        };
         var sch_vue_tb = new Vue({
             el: '#sch_vue_tb',
             data: {
@@ -62,18 +54,86 @@
                 schedule: getSchedule()
             },
             components: {
-                sch_tr: sch_tr,
-                event_box: event_box
+                sch_tr: sch_tr
+            },
+            methods: {
+                showModal: function(data){
+                    alert(data.event);
+                }
+            },
+            computed: {
+                tr_scale: function(){
+                    return 100/(this.days.length + 0.5);
+                },
+                event_data: function(){
+                    return parseEventdata(this.schedule, this.date, this.days.length);
+                }
             }
         });
         function getSchedule(){
             // schedule range must be in the same month
             return {
-                2016: {
-                    12: {
+                2017: {
+                    1: {
                         20: { end:25, time_start:'9:30', time_end:'10:30', event:'do something'}
                     }
                 }
+            }
+        }
+        function parseEventdata(schedule, date, tr_num){
+            var cur_year = date.getFullYear(),
+                    cur_month = date.getMonth() + 1;
+            var cur_month_event = schedule[cur_year][cur_month];
+            var event_arr = [];
+            for(var day in cur_month_event){
+                var layout_data = parseLayoutData(date, day, cur_month_event[day]);
+                layout_data.width.forEach(function(val, i){
+                    var data_config = {
+                        year: cur_year,
+                        month: cur_month,
+                        day: day,
+                        event: cur_month_event[day].event,
+                        top: (layout_data.top + i)*100/tr_num + '%',
+                        left: i > 0 ? 0 : layout_data.left + '%',
+                        width: val + '%'
+                    };
+                    event_arr.push(data_config)
+                });
+            }
+            return event_arr;
+        }
+        function parseLayoutData(date, day, cur_event){
+            var days = getDateData(date).days;
+            date.setDate(day);
+            var week_day = date.getDay();
+            date.setDate(1);
+            var week_1th = date.getDay();
+            var row = Math.ceil((day - (7 - week_1th))/7),
+                    column = week_day;
+            var width = [], box_width = 100/7;
+            var extral_week, extral_day;
+            if(day <= days){
+                if(typeof cur_event.end === 'number' && cur_event.end > day && cur_event.end <= days){
+                    if((cur_event.end - day) - (6 - week_day) <=0){
+                        width.push((cur_event.end - day)*box_width);
+                    } else {
+                        width = [];
+                        width.push((7 - week_day)*box_width);
+                        extral_day = (cur_event.end - day) - (6 - week_day);
+                        extral_week = Math.floor(extral_day/7);
+                        for(var i=0; i<extral_week; i++){
+                            width.push(7*box_width);
+                        }
+                        width.push((extral_day%7)*box_width);
+                    }
+                } else {
+                    width.push(box_width);
+                }
+            }
+            return {
+                left: column * box_width,
+                top: row,
+                width: width
             }
         }
         // parse schedule in current month
@@ -157,7 +217,26 @@
                 return ele.getElementsByTagName(selector);
             }
         }
-    })()
+    })();
+    var event_box= {
+        props: ['schedule', 'date'],
+        template:'\
+                <div class="sch-event-box" v-for="data in event_data" v-on:click="emitShowModal(data)">\
+                        {{data.event}}\
+                </div>',
+        computed: {
+            event_data: function(){
+                return [{
+                    event: 'ffffff'
+                }]
+            }
+        },
+        methods: {
+            emitShowModal: function(data){
+                this.$emit('emitShowModal', data);
+            }
+        }
+    };
 </script>
 </body>
 </html>
