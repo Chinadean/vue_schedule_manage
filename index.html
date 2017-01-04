@@ -8,12 +8,12 @@
 <body>
 <div class="container">
     <div class="schedule">
-        <div class="sch-header">
+        <!--<div class="sch-header">-->
 
-        </div>
+        <!--</div>-->
         <div class="sch-body" id="sch_vue_tb">
             <table class="sch-date" border="1">
-                <thead v-bind:style="{height:tr_scale * 0.5 + '%'}">
+                <thead>
                     <tr>
                         <th>Sun</th>
                         <th>Mon</th>
@@ -24,27 +24,42 @@
                         <th>Sat</th>
                     </tr>
                 </thead>
-                <tbody v-bind:style="{height:100 - tr_scale * 0.5 + '%'}">
-                    <tr is="sch_tr" v-for="item in days" v-bind:tr_data="item"></tr>
+                <tbody>
+                    <tr is="sch_tr" v-for="item in days" v-bind:tr_data="item" v-bind:schedule="cur_month_sch"></tr>
                 </tbody>
             </table>
-            <div class="sch-event-box" v-for="data in event_data"
-                 v-bind:style="{top:data.top, left:data.left, width:data.width, height:tr_height*0.5+'%'}"
-                 v-on:click="showModal(data)" v-cloak>
+            <!--<div class="sch-event-box" v-for="data in event_data" v-on:click="showModal(data)" v-cloak>
                 {{data.event}}
-            </div>
+            </div>-->
         </div>
     </div>
 </div>
 <script src="vue.js"></script>
 <script>
     (function(){
-        var sch_tr= {
-            props: ['tr_data'],
+        var sch_td = {
+            props:['text', 'schedule'],
             template:'\
-            <tr>\
-                <td v-for="text in tr_data" v-bind:class="text===\'\'? \'\':\'sch-day\'">{{text}}</td>\
-            </tr>'
+                <td>{{text}}\
+                    <div v-if="is_sch !== undefined" class="has-sch">{{is_sch}}</div>\
+                </td>',
+            computed: {
+                is_sch: function(){
+                    if(this.schedule[this.text]){
+                        return this.schedule[this.text]["event"]
+                    }
+                }
+            }
+        };
+        var sch_tr= {
+            props: ['tr_data','schedule'],
+            template:'\
+                <tr>\
+                    <td is="sch_td" v-for="text in tr_data" v-bind:text="text" v-bind:schedule="schedule"></td>\
+                </tr>',
+            components: {
+                sch_td: sch_td
+            }
         };
         var sch_vue_tb = new Vue({
             el: '#sch_vue_tb',
@@ -62,11 +77,10 @@
                 }
             },
             computed: {
-                tr_scale: function(){
-                    return 100/(this.days.length + 0.5);
-                },
-                event_data: function(){
-                    return parseEventdata(this.schedule, this.date, this.days.length);
+                cur_month_sch: function(){
+                    var cur_year = this.date.getFullYear(),
+                            cur_month = this.date.getMonth() + 1;
+                    return this.schedule[cur_year][cur_month];
                 }
             }
         });
@@ -80,7 +94,7 @@
                 }
             }
         }
-        function parseEventdata(schedule, date, tr_num){
+        function parseEventdata(schedule, date, tr_scale){
             var cur_year = date.getFullYear(),
                     cur_month = date.getMonth() + 1;
             var cur_month_event = schedule[cur_year][cur_month];
@@ -93,7 +107,7 @@
                         month: cur_month,
                         day: day,
                         event: cur_month_event[day].event,
-                        top: (layout_data.top + i)*100/tr_num + '%',
+                        top: (layout_data.top + i + 0.25)*tr_scale + '%',
                         left: i > 0 ? 0 : layout_data.left + '%',
                         width: val + '%'
                     };

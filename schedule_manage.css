@@ -5,25 +5,29 @@
 }
 [v-cloak] {
     display: none;
-    }
+}
 .schedule{
     height: 100%;
     text-align: center;
 }
 .sch-body{
     height: 100%;
-    position: relative;
 }
 .sch-date{
+    table-layout: fixed;
     height: 100%;
     width: 100%;
     border-collapse: collapse;
 }
 .sch-date > thead > tr{
-    height: 100%;
-}
-.sch-date > tbody > tr{
 
+}
+.sch-date > tbody{
+    text-align: right;
+    vertical-align: top;
+}
+.has-sch{
+    background-color: red;
 }
 .sch-event-box{
     position: absolute;
