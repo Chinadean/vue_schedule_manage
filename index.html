@@ -35,8 +35,9 @@
         </table>
         <transition name="fade">
             <sch_modal v-show="is_modal_show" v-on:hide_modal="hideModal"
-                       v-bind:cur_day_event="cur_day_event" v-bind:cur_day="cur_day"
-                       v-on:update_schedule="updateSchedule(arguments[0], arguments[1])"></sch_modal>
+                       v-bind:cur_day_event="cur_day_event" v-bind:cur_day="cur_day" v-bind:date="date"
+                       v-on:update_schedule="updateSchedule(arguments[0], arguments[1])">
+            </sch_modal>
         </transition>
     </div>
 </div>
@@ -47,51 +48,50 @@
             <div class="sch-modal-content">
                 <i class="sch-modal-close" v-on:click="hideModal"></i>
                 <div class="modal-header">
-                    <h3>日程管理</h3>
+                    <h3>Schedule management</h3>
                     <div class="modal-date modal-text"></div>
                 </div>
                 <div class="modal-body">
                     <div>
+                        <h4>Date</h4>
+                        <span v-cloak>{{cur_date}}</span>
+                    </div>
+                    <div>
                         <h4 class="modal-text">
-                            日程列表
+                            Schedule list
                         </h4>
                         <select v-model="event_index">
-                            <option value="-1">新建日程</option>
+                            <option value="-1">new schedule</option>
                             <option v-for="(event,index) in cur_day_event" v-bind:value="index">{{event.theme}}</option>
                         </select>
                     </div>
                     <div id="time_slot">
                         <h4 class="modal-text">
-                            开始时间
+                            Time range
                         </h4>
                         <div class="modal-start">
                             <input v-model="start_h">
-                            &nbsp;时
+                            :
                             <input v-model="start_m">
-                            &nbsp;分
-                        </div>
-                        <div class="modal-text">
-                            结束时间
-                        </div>
-                        <div class="modal-end">
+                            ~
                             <input v-model="end_h">
-                            &nbsp;时
+                            :
                             <input v-model="end_m">
-                            &nbsp;分
+
                         </div>
                     </div>
                     <div class="modal-text">
-                        <h4>主题</h4>
+                        <h4>Theme</h4>
                         <input v-model="theme">
                     </div>
                     <div class="modal-text">
-                        <h4>内容</h4>
+                        <h4>Details</h4>
                         <textarea  v-model="detail"></textarea>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button v-on:click="save">保存</button>
-                    <button id="modal_delete">删除</button>
+                    <button v-on:click="save">save</button>
+                    <button v-on:click="deleted">delete</button>
                 </div>
             </div>
             </div>
@@ -145,7 +145,7 @@
             }
         };
         var sch_modal = {
-            props: ['cur_day', 'cur_day_event'],
+            props: ['cur_day','date', 'cur_day_event'],
             template: '#sch_modal_template',
             data: function(){
                 return {
@@ -156,6 +156,11 @@
                     end_m: '',
                     theme: '',
                     detail: ''
+                }
+            },
+            computed: {
+                cur_date: function(){
+                    return this.date.getFullYear() + '-' + (this.date.getMonth() + 1) + '-' + this.cur_day
                 }
             },
             watch: {
@@ -188,6 +193,13 @@
                     }
                     this.$emit('update_schedule',this.cur_day_event, this.cur_day);
                     this.hideModal();
+                },
+                deleted: function(){
+                    if(this.event_index !== '-1'){
+                        this.cur_day_event.splice(parseInt(this.event_index), 1);
+                        this.$emit('update_schedule',this.cur_day_event, this.cur_day);
+                        this.hideModal();
+                    }
                 }
             }
         };
