@@ -7,80 +7,285 @@
 </head>
 <body>
 <div class="container">
-    <div class="schedule">
-        <!--<div class="sch-header">-->
-
-        <!--</div>-->
-        <div class="sch-body" id="sch_vue_tb">
-            <table class="sch-date" border="1">
-                <thead>
-                    <tr>
-                        <th>Sun</th>
-                        <th>Mon</th>
-                        <th>Tue</th>
-                        <th>Wed</th>
-                        <th>Thu</th>
-                        <th>Fri</th>
-                        <th>Sat</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr is="sch_tr" v-for="item in days" v-bind:tr_data="item" v-bind:schedule="cur_month_sch"></tr>
-                </tbody>
-            </table>
-            <!--<div class="sch-event-box" v-for="data in event_data" v-on:click="showModal(data)" v-cloak>
-                {{data.event}}
-            </div>-->
-        </div>
+    <div class="schedule" id="vue_sch">
+        <table class="sch-header">
+            <tr>
+                <td><i class="sch-left" v-on:click="minusDate"></i></td>
+                <td class="sch-date"><span v-cloak>{{date_formate}}</span></td>
+                <td><i class="sch-right" v-on:click="addDate"></i></td>
+            </tr>
+        </table>
+        <table class="sch-calendar" border="1">
+            <thead>
+            <tr>
+                <th>Sun</th>
+                <th>Mon</th>
+                <th>Tue</th>
+                <th>Wed</th>
+                <th>Thu</th>
+                <th>Fri</th>
+                <th>Sat</th>
+            </tr>
+            </thead>
+            <tbody>
+                <tr is="sch_tr" v-bind:style="{height:tr_scale+'%'}" v-for="item in days"
+                    v-bind:tr_data="item" v-bind:schedule="cur_month_sch"
+                    v-on:show_detail="showModal(arguments[0])"></tr>
+            </tbody>
+        </table>
+        <transition name="fade">
+            <sch_modal v-show="is_modal_show" v-on:hide_modal="hideModal"
+                       v-bind:cur_day_event="cur_day_event" v-bind:cur_day="cur_day"
+                       v-on:update_schedule="updateSchedule(arguments[0], arguments[1])"></sch_modal>
+        </transition>
     </div>
 </div>
 <script src="vue.js"></script>
+<script type="text/x-template" id="sch_modal_template">
+    <div class="sch-modal">
+        <div class="sch-modal-bg">
+            <div class="sch-modal-content">
+                <i class="sch-modal-close" v-on:click="hideModal"></i>
+                <div class="modal-header">
+                    <h3>日程管理</h3>
+                    <div class="modal-date modal-text"></div>
+                </div>
+                <div class="modal-body">
+                    <div>
+                        <h4 class="modal-text">
+                            日程列表
+                        </h4>
+                        <select v-model="event_index">
+                            <option value="-1">新建日程</option>
+                            <option v-for="(event,index) in cur_day_event" v-bind:value="index">{{event.theme}}</option>
+                        </select>
+                    </div>
+                    <div id="time_slot">
+                        <h4 class="modal-text">
+                            开始时间
+                        </h4>
+                        <div class="modal-start">
+                            <input v-model="start_h">
+                            &nbsp;时
+                            <input v-model="start_m">
+                            &nbsp;分
+                        </div>
+                        <div class="modal-text">
+                            结束时间
+                        </div>
+                        <div class="modal-end">
+                            <input v-model="end_h">
+                            &nbsp;时
+                            <input v-model="end_m">
+                            &nbsp;分
+                        </div>
+                    </div>
+                    <div class="modal-text">
+                        <h4>主题</h4>
+                        <input v-model="theme">
+                    </div>
+                    <div class="modal-text">
+                        <h4>内容</h4>
+                        <textarea  v-model="detail"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button v-on:click="save">保存</button>
+                    <button id="modal_delete">删除</button>
+                </div>
+            </div>
+            </div>
+        <div class="sch-modal-mask"></div>
+    </div>
+</script>
 <script>
     (function(){
-        var sch_td = {
+        /*var sch_td = {
             props:['text', 'schedule'],
             template:'\
-                <td>{{text}}\
-                    <div v-if="is_sch !== undefined" class="has-sch">{{is_sch}}</div>\
+                <td v-on:click="showDetail">{{text}}\
+                    <div class="has-sch" v-for="event in is_sch">{{event.theme}}</div>\
                 </td>',
             computed: {
                 is_sch: function(){
-                    if(this.schedule[this.text]){
-                        return this.schedule[this.text]["event"]
+                    if(this.schedule && this.schedule[this.text]){
+                        return this.schedule[this.text]
+                    } else {
+                        return [];
+                    }
+                }
+            },
+            methods: {
+                showDetail: function(){
+                    if(this.text !== ''){
+                        this.$emit('showDetail', this.text);
                     }
                 }
             }
-        };
+        };*/
         var sch_tr= {
             props: ['tr_data','schedule'],
             template:'\
                 <tr>\
-                    <td is="sch_td" v-for="text in tr_data" v-bind:text="text" v-bind:schedule="schedule"></td>\
+                    <td v-for="text in tr_data" v-bind:class="is_sch(text)" v-on:click="showDetail(text)">{{text}}</td>\
                 </tr>',
-            components: {
-                sch_td: sch_td
+            methods: {
+                showDetail: function(day){
+                    if(day !== ''){
+                        this.$emit('show_detail', day);
+                    }
+                },
+                is_sch: function(day){
+                    if(this.schedule && this.schedule[day]){
+                        return 'has-sch';
+                    } else {
+                        return '';
+                    }
+                }
             }
         };
-        var sch_vue_tb = new Vue({
-            el: '#sch_vue_tb',
-            data: {
-                date: new Date(),
-                days: compute_date(this.date),
-                schedule: getSchedule()
+        var sch_modal = {
+            props: ['cur_day', 'cur_day_event'],
+            template: '#sch_modal_template',
+            data: function(){
+                return {
+                    event_index: '-1',
+                    start_h: '',
+                    start_m: '',
+                    end_h: '',
+                    end_m: '',
+                    theme: '',
+                    detail: ''
+                }
             },
-            components: {
-                sch_tr: sch_tr
+            watch: {
+                cur_day_event: function(){
+                    if(this.cur_day_event.length > 0){
+                        this.event_index = '0'
+                    } else {
+                        this.event_index = '-1'
+                    }
+                }
             },
             methods: {
-                showModal: function(data){
-                    alert(data.event);
+                hideModal: function(){
+                    this.$emit('hide_modal');
+                },
+                save: function(){
+                    var sch_obj = {
+                        time_start: this.start_h + ':' + this.start_m,
+                        time_end: this.end_h + ':' + this.end_m,
+                        theme: this.theme,
+                        detail: this.detail
+                    };
+                    if(this.event_index === '-1'){
+                        this.cur_day_event.push(sch_obj);
+                    } else {
+                        this.cur_day_event[this.event_index] = sch_obj;
+                    }
+                    this.$emit('update_schedule',this.cur_day_event, this.cur_day);
+                    this.hideModal();
                 }
             },
             computed: {
+                start_h: function(){
+                    return switchEvent(this, 'time_start').split(':')[0];
+                },
+                start_m: function(){
+                    return switchEvent(this, 'time_start').split(':')[1];
+                },
+                end_h: function(){
+                    return switchEvent(this, 'time_end').split(':')[0];
+                },
+                end_m: function(){
+                    return switchEvent(this, 'time_end').split(':')[1];
+                },
+                theme: function(){
+                    return switchEvent(this, 'theme');
+                },
+                detail: function(){
+                    return switchEvent(this, 'detail');
+                }
+            }
+        };
+        function switchEvent(data, type){
+            if(data.event_index !== '-1'){
+                var item = data.cur_day_event[data.event_index][type];
+                if(item !== undefined){
+                    return item
+                } else {
+                    return '';
+                }
+            } else {
+                return '';
+            }
+        }
+        var sch_vue_tb = new Vue({
+            el: '#vue_sch',
+            data: {
+                date: new Date(),
+                is_modal_show: false,
+                schedule: getSchedule(),
+                cur_day: '',
+                cur_day_event: []
+            },
+            components: {
+                sch_tr: sch_tr,
+                sch_modal: sch_modal
+            },
+            methods: {
+                showModal: function(day){
+                    if(this.cur_month_sch[day]){
+                        this.cur_day_event = this.cur_month_sch[day];
+                    } else {
+                        this.cur_day_event = [];
+                    }
+                    this.cur_day = day;
+                    this.is_modal_show = true;
+                },
+                hideModal: function(){
+                    this.is_modal_show = false;
+                },
+                updateSchedule: function(event_arr, cur_day){
+                    var cur_year = this.date.getFullYear(),
+                            cur_month = this.date.getMonth() + 1;
+//                    if(this.schedule[cur_year] === undefined){
+//                        this.$set(this.schedule, cur_year, {});
+//                    }
+//                    if(this.schedule[cur_year][cur_month] === undefined){
+//                        this.$set(this.schedule[cur_year], cur_month, {});
+//                    }
+//                    if(this.schedule[cur_year][cur_month][cur_day] === undefined){
+//                        this.$set(this.schedule[cur_year][cur_month], cur_day, event_arr);
+//                    } else {
+//                        this.schedule[cur_year][cur_month][cur_day] = event_arr;
+//                    }
+                    this.$set(this.schedule[cur_year][cur_month], cur_day, event_arr);
+                },
+                addDate: function(){
+                    this.date = new Date(this.date.getFullYear(), this.date.getMonth() + 1, 1);
+                },
+                minusDate: function(){
+                    this.date = new Date(this.date.getFullYear(), this.date.getMonth() - 1, 1);
+                }
+            },
+            computed: {
+                days: function(){
+                    return compute_date(this.date);
+                },
+                date_formate: function(){
+                    var cur_date = this.date;
+                    return cur_date.getFullYear() + '-' + (cur_date.getMonth() + 1);
+                },
+                tr_scale: function(){
+                    return 100/this.days.length;
+                },
                 cur_month_sch: function(){
                     var cur_year = this.date.getFullYear(),
                             cur_month = this.date.getMonth() + 1;
-                    return this.schedule[cur_year][cur_month];
+                    if(this.schedule && this.schedule[cur_year]){
+                        return this.schedule[cur_year][cur_month];
+                    }
                 }
             }
         });
@@ -89,7 +294,8 @@
             return {
                 2017: {
                     1: {
-                        20: { end:25, time_start:'9:30', time_end:'10:30', event:'do something'}
+                        20: [{ end:25, time_start:'9:30', time_end:'10:30', theme:'do something'},
+                            { end:22, time_start:'9:30', time_end:'10:30', theme:'do something'}]
                     }
                 }
             }
