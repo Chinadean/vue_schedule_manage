@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="schedule_manage.css">
+    <title>Schedule Manage</title>
+</head>
+<body>
+<div class="container">
+    <div class="schedule" id="vue_sch">
+        <sch_td v-on:showDetail="addDate"></sch_td>
+        <span>{{cur_month_sch["20"]["0"]["event"]}}</span>
+    </div>
+</div>
+<script src="vue.js"></script>
+<script>
+    (function(){
+        Vue.component('sch_td', {
+            template: '<button v-on:click="increment">{{ counter }}</button>',
+            data: function () {
+                return {
+                    counter: 0
+                }
+            },
+            methods: {
+                increment: function () {
+                    this.counter += 1;
+                    this.$emit('increment')
+                }
+            }
+        });
+        /*var sch_td = {
+            template:'\
+                <div v-on:click="showDetail">hhhhh</div>',
+            methods: {
+                showDetail: function(){
+                    alert('hhhh');
+                    this.$emit('showDetail');
+                }
+            }
+        };*/
+        var sch_vue_tb = new Vue({
+            el: '#vue_sch',
+            data: {
+                date: new Date(),
+                schedule: getSchedule()
+            },
+
+            methods: {
+                showModal: function(data){
+                    //alert(data.event);
+                    alert('showDetail');
+                },
+                addDate: function(){
+                    alert('showDetail');
+                },
+                minusDate: function(){
+                    this.date = new Date(this.date.getFullYear(), this.date.getMonth() - 1, 1);
+                }
+            },
+            computed: {
+                days: function(){
+                    return compute_date(this.date);
+                },
+                date_formate: function(){
+                    var cur_date = this.date;
+                    return cur_date.getFullYear() + '-' + (cur_date.getMonth() + 1);
+                },
+                tr_scale: function(){
+                    return 100/this.days.length;
+                },
+                cur_month_sch: function(){
+                    var cur_year = this.date.getFullYear(),
+                            cur_month = this.date.getMonth() + 1;
+                    if(this.schedule && this.schedule[cur_year]){
+                        return this.schedule[cur_year][cur_month];
+                    }
+                }
+            }
+        });
+        setTimeout(function(){
+            sch_vue_tb.schedule["2017"]["2"]["20"] = [{"event": "hehehehe"}, {"event": "hjahhah"}];
+        },1000);
+        function getSchedule(){
+            // schedule range must be in the same month
+            return {
+                2017: {
+                    2: {
+                        20: [{ end:25, time_start:'9:30', time_end:'10:30', event:'do something'}]
+                    }
+                }
+            }
+        }
+        function parseEventdata(schedule, date, tr_scale){
+            var cur_year = date.getFullYear(),
+                    cur_month = date.getMonth() + 1;
+            var cur_month_event = schedule[cur_year][cur_month];
+            var event_arr = [];
+            for(var day in cur_month_event){
+                var layout_data = parseLayoutData(date, day, cur_month_event[day]);
+                layout_data.width.forEach(function(val, i){
+                    var data_config = {
+                        year: cur_year,
+                        month: cur_month,
+                        day: day,
+                        event: cur_month_event[day].event,
+                        top: (layout_data.top + i + 0.25)*tr_scale + '%',
+                        left: i > 0 ? 0 : layout_data.left + '%',
+                        width: val + '%'
+                    };
+                    event_arr.push(data_config)
+                });
+            }
+            return event_arr;
+        }
+        function parseLayoutData(date, day, cur_event){
+            var days = getDateData(date).days;
+            date.setDate(day);
+            var week_day = date.getDay();
+            date.setDate(1);
+            var week_1th = date.getDay();
+            var row = Math.ceil((day - (7 - week_1th))/7),
+                    column = week_day;
+            var width = [], box_width = 100/7;
+            var extral_week, extral_day;
+            if(day <= days){
+                if(typeof cur_event.end === 'number' && cur_event.end > day && cur_event.end <= days){
+                    if((cur_event.end - day) - (6 - week_day) <=0){
+                        width.push((cur_event.end - day)*box_width);
+                    } else {
+                        width = [];
+                        width.push((7 - week_day)*box_width);
+                        extral_day = (cur_event.end - day) - (6 - week_day);
+                        extral_week = Math.floor(extral_day/7);
+                        for(var i=0; i<extral_week; i++){
+                            width.push(7*box_width);
+                        }
+                        width.push((extral_day%7)*box_width);
+                    }
+                } else {
+                    width.push(box_width);
+                }
+            }
+            return {
+                left: column * box_width,
+                top: row,
+                width: width
+            }
+        }
+        // parse schedule in current month
+        function parseScheduleDate(schedule, date){
+            var schedule_arr = [];
+            var month = date.getMonth(),
+                    sch_obj;
+            var date_arr, start_date_arr, end_date_arr;
+            schedule.forEach(function(val, i){
+                date_arr = val.split('-');
+                start_date_arr = date_arr[0].split('.');
+                sch_obj = {
+                    start: {
+                        year: start_date_arr[0],
+                        month: start_date_arr[1],
+                        day: start_date_arr[2]
+                    },
+                    time: val.time,
+                    event: val.event
+                };
+                // is date range
+                if(date_arr[1]){
+                    end_date_arr = date_arr[1].split('.');
+                    sch_obj.end = {
+                        year: end_date_arr[0],
+                        month: end_date_arr[1],
+                        day: end_date_arr[2]
+                    };
+                }
+                // is current month
+                if(month == sch_obj.start.month){
+                    if(!sch_obj.end || sch_obj.end.month === sch_obj.start.month){
+                        schedule_arr.push(sch_obj);
+                    }
+                }
+                return schedule_arr;
+            });
+        }
+        function compute_date(date){
+            var date_arr = [],
+                    date_week_arr = [],
+                    date_obj = getDateData(date);
+            for(var i = 0; i < date_obj.day_week; i++){
+                date_week_arr[i] = '';
+            }
+            for(var j = 1; j <= date_obj.days; j++){
+                if(date_week_arr.length === 7){
+                    date_arr.push(date_week_arr);
+                    date_week_arr = [];
+                }
+                date_week_arr.push(j);
+                if(j == date_obj.days){
+                    for(var k = date_week_arr.length; k < 7; k++){
+                        date_week_arr[k] = '';
+                    }
+                    date_arr.push(date_week_arr);
+                }
+            }
+            return date_arr
+        }
+        function getDateData(date){
+            date || (date = new Date());
+            var year = date.getFullYear(),
+                    month = date.getMonth();
+            var isLeapYear = (year % 4 == 0) && (year % 100 != 0 || year % 400 == 0),
+                    days = (month === 2) ? (28 + isLeapYear) : 31 - month % 7 % 2;
+            date.setDate(1);
+            var day_week = date.getDay();
+            return {
+                days: days,
+                day_week: day_week
+            }
+        }
+        function getEle(selector, ele){
+            ele || (ele = document);
+            if(/^#.+/.test(selector)){
+                return ele.getElementById(selector);
+            }else if(/^\..+/.test(selector)){
+                return ele.getElementsByClassName(selector);
+            } else {
+                return ele.getElementsByTagName(selector);
+            }
+        }
+    })();
+    var event_box= {
+        props: ['schedule', 'date'],
+        template:'\
+                <div class="sch-event-box" v-for="data in event_data" v-on:click="emitShowModal(data)">\
+                        {{data.event}}\
+                </div>',
+        computed: {
+            event_data: function(){
+                return [{
+                    event: 'ffffff'
+                }]
+            }
+        },
+        methods: {
+            emitShowModal: function(data){
+                this.$emit('emitShowModal', data);
+            }
+        }
+    };
+</script>
+</body>
+</html>

@@ -47,17 +47,16 @@
         <div class="sch-modal-bg">
             <div class="sch-modal-content">
                 <i class="sch-modal-close" v-on:click="hideModal"></i>
-                <div class="modal-header">
+                <div class="sch-modal-header">
                     <h3>Schedule management</h3>
-                    <div class="modal-date modal-text"></div>
                 </div>
-                <div class="modal-body">
+                <div class="sch-modal-body">
                     <div>
                         <h4>Date</h4>
                         <span v-cloak>{{cur_date}}</span>
                     </div>
                     <div>
-                        <h4 class="modal-text">
+                        <h4 class="sch-modal-text">
                             Schedule list
                         </h4>
                         <select v-model="event_index">
@@ -65,26 +64,25 @@
                             <option v-for="(event,index) in cur_day_event" v-bind:value="index">{{event.theme}}</option>
                         </select>
                     </div>
-                    <div id="time_slot">
-                        <h4 class="modal-text">
+                    <div>
+                        <h4 class="sch-modal-text">
                             Time range
                         </h4>
-                        <div class="modal-start">
+                        <div class="sch-modal-time-range">
                             <input v-model="start_h">
                             :
                             <input v-model="start_m">
-                            ~
+                            -
                             <input v-model="end_h">
                             :
                             <input v-model="end_m">
-
                         </div>
                     </div>
-                    <div class="modal-text">
+                    <div class="sch-modal-text">
                         <h4>Theme</h4>
                         <input v-model="theme">
                     </div>
-                    <div class="modal-text">
+                    <div class="sch-modal-text">
                         <h4>Details</h4>
                         <textarea  v-model="detail"></textarea>
                     </div>
@@ -127,7 +125,7 @@
             props: ['tr_data','schedule'],
             template:'\
                 <tr>\
-                    <td v-for="text in tr_data" v-bind:class="is_sch(text)" v-on:click="showDetail(text)">{{text}}</td>\
+                    <td v-for="text in tr_data" v-bind:class="is_sch(text)" v-on:click="showDetail(text)">{{event}}</td>\
                 </tr>',
             methods: {
                 showDetail: function(day){
@@ -137,6 +135,15 @@
                 },
                 is_sch: function(day){
                     if(this.schedule && this.schedule[day]){
+                        return 'has-sch';
+                    } else {
+                        return '';
+                    }
+                }
+            },
+            computed: {
+                event: function(){
+                    if(this.schedule && this.schedule["20"]){
                         return 'has-sch';
                     } else {
                         return '';
@@ -287,6 +294,8 @@
                             cur_month = this.date.getMonth() + 1;
                     if(this.schedule && this.schedule[cur_year]){
                         return this.schedule[cur_year][cur_month];
+                    } else{
+                        return [];
                     }
                 }
             }
