@@ -276,11 +276,11 @@
             var result = validator.is_start_h(modal.start_h);
             if(result !== true){
                 return modal.time_range_valid = result;
-            } else if(result = validator.is_start_m(modal.start_m) !== true){
+            } else if((result = validator.is_start_m(modal.start_m)) !== true){
                 return modal.time_range_valid = result;
-            } else if(result = validator.is_end_h(modal.end_h, modal.start_h) !== true){
+            } else if((result = validator.is_end_h(modal.end_h, modal.start_h)) !== true){
                 return modal.time_range_valid = result;
-            } else if(result = validator.is_end_m(modal.end_m, modal.start_h, modal.start_m, modal.end_h) !== true){
+            } else if((result = validator.is_end_m(modal.end_m, modal.start_h, modal.start_m, modal.end_h)) !== true){
                 return modal.time_range_valid = result;
             } else {
                 return modal.theme_valid = validator.is_theme(modal.theme);
@@ -376,109 +376,6 @@
                 }
             }
         });
-        function getSchedule(){
-            // schedule range must be in the same month
-            return {
-                2017: {
-                    1: {
-                        20: [{ end:25, time_start:'9:30', time_end:'10:30', theme:'do something'},
-                            { end:22, time_start:'9:30', time_end:'10:30', theme:'do something'}]
-                    }
-                }
-            }
-        }
-        function parseEventdata(schedule, date, tr_scale){
-            var cur_year = date.getFullYear(),
-                    cur_month = date.getMonth() + 1;
-            var cur_month_event = schedule[cur_year][cur_month];
-            var event_arr = [];
-            for(var day in cur_month_event){
-                var layout_data = parseLayoutData(date, day, cur_month_event[day]);
-                layout_data.width.forEach(function(val, i){
-                    var data_config = {
-                        year: cur_year,
-                        month: cur_month,
-                        day: day,
-                        event: cur_month_event[day].event,
-                        top: (layout_data.top + i + 0.25)*tr_scale + '%',
-                        left: i > 0 ? 0 : layout_data.left + '%',
-                        width: val + '%'
-                    };
-                    event_arr.push(data_config)
-                });
-            }
-            return event_arr;
-        }
-        function parseLayoutData(date, day, cur_event){
-            var days = getDateData(date).days;
-            date.setDate(day);
-            var week_day = date.getDay();
-            date.setDate(1);
-            var week_1th = date.getDay();
-            var row = Math.ceil((day - (7 - week_1th))/7),
-                    column = week_day;
-            var width = [], box_width = 100/7;
-            var extral_week, extral_day;
-            if(day <= days){
-                if(typeof cur_event.end === 'number' && cur_event.end > day && cur_event.end <= days){
-                    if((cur_event.end - day) - (6 - week_day) <=0){
-                        width.push((cur_event.end - day)*box_width);
-                    } else {
-                        width = [];
-                        width.push((7 - week_day)*box_width);
-                        extral_day = (cur_event.end - day) - (6 - week_day);
-                        extral_week = Math.floor(extral_day/7);
-                        for(var i=0; i<extral_week; i++){
-                            width.push(7*box_width);
-                        }
-                        width.push((extral_day%7)*box_width);
-                    }
-                } else {
-                    width.push(box_width);
-                }
-            }
-            return {
-                left: column * box_width,
-                top: row,
-                width: width
-            }
-        }
-        // parse schedule in current month
-        function parseScheduleDate(schedule, date){
-            var schedule_arr = [];
-            var month = date.getMonth(),
-                    sch_obj;
-            var date_arr, start_date_arr, end_date_arr;
-            schedule.forEach(function(val, i){
-                date_arr = val.split('-');
-                start_date_arr = date_arr[0].split('.');
-                sch_obj = {
-                    start: {
-                        year: start_date_arr[0],
-                        month: start_date_arr[1],
-                        day: start_date_arr[2]
-                    },
-                    time: val.time,
-                    event: val.event
-                };
-                // is date range
-                if(date_arr[1]){
-                    end_date_arr = date_arr[1].split('.');
-                    sch_obj.end = {
-                        year: end_date_arr[0],
-                        month: end_date_arr[1],
-                        day: end_date_arr[2]
-                    };
-                }
-                // is current month
-                if(month == sch_obj.start.month){
-                    if(!sch_obj.end || sch_obj.end.month === sch_obj.start.month){
-                        schedule_arr.push(sch_obj);
-                    }
-                }
-                return schedule_arr;
-            });
-        }
         function compute_date(date){
             var date_arr = [],
                     date_week_arr = [],
@@ -514,36 +411,18 @@
                 day_week: day_week
             }
         }
-        function getEle(selector, ele){
-            ele || (ele = document);
-            if(/^#.+/.test(selector)){
-                return ele.getElementById(selector);
-            }else if(/^\..+/.test(selector)){
-                return ele.getElementsByClassName(selector);
-            } else {
-                return ele.getElementsByTagName(selector);
+        function getSchedule(){
+            // schedule range must be in the same month
+            return {
+                2017: {
+                    1: {
+                        20: [{ end:25, time_start:'9:30', time_end:'10:30', theme:'do something'},
+                            { end:22, time_start:'9:30', time_end:'10:30', theme:'do something'}]
+                    }
+                }
             }
         }
     })();
-    var event_box= {
-        props: ['schedule', 'date'],
-        template:'\
-                <div class="sch-event-box" v-for="data in event_data" v-on:click="emitShowModal(data)">\
-                        {{data.event}}\
-                </div>',
-        computed: {
-            event_data: function(){
-                return [{
-                    event: 'ffffff'
-                }]
-            }
-        },
-        methods: {
-            emitShowModal: function(data){
-                this.$emit('emitShowModal', data);
-            }
-        }
-    };
 </script>
 </body>
 </html>
