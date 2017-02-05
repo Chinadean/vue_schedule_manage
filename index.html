@@ -69,18 +69,20 @@
                             Time range
                         </h4>
                         <div class="sch-modal-time-range">
-                            <input v-model="start_h">
+                            <div  class="sch-err-msg" v-show="time_range_valid!==true">{{time_range_valid}}</div>
+                            <input v-model="start_h" v-on:keyup="valid_start_h">
                             :
-                            <input v-model="start_m">
+                            <input v-model="start_m" v-on:keyup="valid_start_m">
                             -
-                            <input v-model="end_h">
+                            <input v-model="end_h" v-on:keyup="valid_end_h">
                             :
-                            <input v-model="end_m">
+                            <input v-model="end_m" v-on:keyup="valid_end_m">
                         </div>
                     </div>
                     <div class="sch-modal-text">
                         <h4>Theme</h4>
-                        <input v-model="theme">
+                        <div class="sch-err-msg" v-show="theme_valid!==true">{{theme_valid}}</div>
+                        <input v-model="theme" v-on:keyup="valid_theme">
                     </div>
                     <div class="sch-modal-text">
                         <h4>Details</h4>
@@ -98,59 +100,93 @@
 </script>
 <script>
     (function(){
-        /*var sch_td = {
-            props:['text', 'schedule'],
-            template:'\
-                <td v-on:click="showDetail">{{text}}\
-                    <div class="has-sch" v-for="event in is_sch">{{event.theme}}</div>\
-                </td>',
-            computed: {
-                is_sch: function(){
-                    if(this.schedule && this.schedule[this.text]){
-                        return this.schedule[this.text]
-                    } else {
-                        return [];
-                    }
-                }
-            },
-            methods: {
-                showDetail: function(){
-                    if(this.text !== ''){
-                        this.$emit('showDetail', this.text);
-                    }
-                }
-            }
-        };*/
         var sch_tr= {
             props: ['tr_data','schedule'],
             template:'\
                 <tr>\
-                    <td v-for="text in tr_data" v-bind:class="is_sch(text)" v-on:click="showDetail(text)">{{event}}</td>\
+                    <box v-for="text in tr_data" v-bind:schedule="schedule" v-bind:day="text" v-on:show_detail="showDetail(arguments[0])"></box>\
                 </tr>',
             methods: {
                 showDetail: function(day){
                     if(day !== ''){
                         this.$emit('show_detail', day);
                     }
-                },
-                is_sch: function(day){
-                    if(this.schedule && this.schedule[day]){
-                        return 'has-sch';
-                    } else {
-                        return '';
-                    }
                 }
             },
-            computed: {
-                event: function(){
-                    if(this.schedule && this.schedule["20"]){
-                        return 'has-sch';
-                    } else {
-                        return '';
+            components: {
+                box: {
+                    props: ["day", "schedule"],
+                    template: '<td v-bind:class="{\'has-sch\': is_active}" v-on:click="box_click">{{day}}</td>',
+                    computed: {
+                        is_active: function(){
+                            if(this.day !== '' && this.schedule && this.schedule[this.day] && this.schedule[this.day].length > 0){
+                                return true;
+                            } else {
+                                return false;
+                            }
+                        }
+                    },
+                    methods: {
+                        box_click: function(){
+                            if(this.day !== ''){
+                                this.$emit('show_detail', this.day);
+                            }
+                        }
                     }
                 }
             }
         };
+        var validator = {
+            is_empty: function(text){
+                return /^[ ]*$/.test(text);
+            },
+            is_hour: function(num){
+                return /^\d{1,2}$/.test(num) && num >= 0 && num < 24
+            },
+            is_minute: function(num){
+                return /^\d{1,2}$/.test(num) && num >= 0 && num < 60
+            },
+            is_start_h: function(start_h){
+                return this.is_hour(start_h) ? true : this.err_msg.err_start_hour;
+            },
+            is_start_m: function(start_m){
+                return this.is_minute(start_m) ? true : this.err_msg.err_start_minute;
+            },
+            is_end_h: function(num, start_h){
+                if(!this.is_hour(num)){
+                    return this.err_msg.err_end_hour
+                } else {
+                    if(start_h !== '' && num < start_h){
+                        return this.err_msg.err_end_time
+                    } else {
+                        return true
+                    }
+                }
+            },
+            is_end_m: function(num, start_h, start_m, end_h){
+                if(!this.is_minute(num)){
+                    return this.err_msg.err_end_minute
+                } else {
+                    if(start_h !== '' &&　end_h !== '' &&
+                            (end_h < start_h || (end_h === start_h &&　start_m !== '' && num <= start_m))){
+                        return this.err_msg.err_end_time
+                    } else {
+                        return true;
+                    }
+                }
+            },
+            is_theme: function(text){
+                return this.is_empty(text) ? this.err_msg.err_theme_empty : true;
+            },
+            err_msg: {
+                err_theme_empty: "The theme can not be empty.",
+                err_start_hour: "The start hour must be 0 to 23 figures.",
+                err_end_hour: "The end hour must be 0 to 23 figures.",
+                err_start_minute: "The start minute must be 0 to 59 figures.",
+                err_end_minute: "The end minute must be 0 to 59 figures.",
+                err_end_time: "The end time can not less than the start time."
+            }
+        }
         var sch_modal = {
             props: ['cur_day','date', 'cur_day_event'],
             template: '#sch_modal_template',
@@ -162,7 +198,9 @@
                     end_h: '',
                     end_m: '',
                     theme: '',
-                    detail: ''
+                    detail: '',
+                    time_range_valid: true,
+                    theme_valid: true
                 }
             },
             computed: {
@@ -180,13 +218,22 @@
                 },
                 event_index: function(){
                     switchEvent(this);
+                    // clear validation status when switch event
+                    this.time_range_valid = true;
+                    this.theme_valid = true;
                 }
             },
             methods: {
                 hideModal: function(){
                     this.$emit('hide_modal');
+                    // clear validation status when close modal
+                    this.time_range_valid = true;
+                    this.theme_valid = true;
                 },
                 save: function(){
+                    if(validateAll(this) !== true){
+                        return false;
+                    }
                     var sch_obj = {
                         time_start: this.start_h + ':' + this.start_m,
                         time_end: this.end_h + ':' + this.end_m,
@@ -207,9 +254,38 @@
                         this.$emit('update_schedule',this.cur_day_event, this.cur_day);
                         this.hideModal();
                     }
+                },
+                valid_start_h: function(){
+                    this.time_range_valid = validator.is_start_h(this.start_h)
+                },
+                valid_start_m: function(){
+                    this.time_range_valid = validator.is_start_m(this.start_m)
+                },
+                valid_end_h: function(){
+                    this.time_range_valid = validator.is_end_h(this.end_h, this.start_h)
+                },
+                valid_end_m: function(){
+                    this.time_range_valid = validator.is_end_m(this.end_m, this.start_h, this.start_m, this.end_h)
+                },
+                valid_theme: function(){
+                    this.theme_valid = validator.is_theme(this.theme)
                 }
             }
         };
+        function validateAll(modal){
+            var result = validator.is_start_h(modal.start_h);
+            if(result !== true){
+                return modal.time_range_valid = result;
+            } else if(result = validator.is_start_m(modal.start_m) !== true){
+                return modal.time_range_valid = result;
+            } else if(result = validator.is_end_h(modal.end_h, modal.start_h) !== true){
+                return modal.time_range_valid = result;
+            } else if(result = validator.is_end_m(modal.end_m, modal.start_h, modal.start_m, modal.end_h) !== true){
+                return modal.time_range_valid = result;
+            } else {
+                return modal.theme_valid = validator.is_theme(modal.theme);
+            }
+        }
         function switchEvent(data){
             if(data.event_index !== '-1'){
                 var item = data.cur_day_event[data.event_index];
