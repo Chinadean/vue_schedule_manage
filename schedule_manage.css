@@ -85,6 +85,8 @@
 }
 .sch-modal-content{
     width: 30%;
+    max-height: 90%;
+    overflow: auto;
     background-color: #fff;
     margin: 20px auto;
     padding: 20px;
@@ -116,3 +118,44 @@
 .fade-enter, .fade-leave-active {
     opacity: 0
 }
+
+/*beautify style start*/
+.schedule{
+    font-family: Î¢ÈíÑÅºÚ, "Microsoft YaHei", Arial, sans-serif;
+    color: #333;
+    font-size: 20px;
+}
+.sch-calendar thead{
+    color: rgb(102, 102, 102);
+    font-size: 16px;
+}
+.sch-modal{
+    color: rgb(102, 102, 102);
+    font-size: 16px;
+}
+.sch-modal-header, .sch-date{
+    color: #333;
+}
+.sch-modal input, .sch-modal textarea, .sch-modal select{
+    height: 20px;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    font-size: 16px;
+}
+.sch-modal textarea{
+    height: 40px;
+    width: 100%;
+}
+.modal-footer{
+    margin-top: 20px;
+    text-align: center;
+}
+.modal-footer button {
+    height: 40px;
+    width: 20%;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    background-color: #51a2ff;
+    font-size: 20px;
+}
+/*beautify style end*/
