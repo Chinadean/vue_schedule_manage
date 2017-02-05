@@ -48,8 +48,14 @@
 .sch-calendar > tbody td{
     cursor: pointer;
 }
-.has-sch{
-    background-color: red;
+.sch_level0{
+    background-color: rgb(87,155,255);
+}
+.sch_level1{
+    background-color: rgb(255,179,90);
+}
+.sch_level2{
+    background-color: rgb(223,35,35);
 }
 .sch-modal{
     position: fixed;
