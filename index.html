@@ -7,7 +7,7 @@
 </head>
 <body>
 <div class="container">
-    <div class="schedule" id="vue_sch">
+    <div class="schedule" id="vue_sch" v-cloak>
         <table class="sch-header">
             <tr>
                 <td><i class="sch-left" v-on:click="minusDate"></i></td>
@@ -18,13 +18,7 @@
         <table class="sch-calendar" border="1">
             <thead>
             <tr>
-                <th>Sun</th>
-                <th>Mon</th>
-                <th>Tue</th>
-                <th>Wed</th>
-                <th>Thu</th>
-                <th>Fri</th>
-                <th>Sat</th>
+                <th v-for="day in ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']">{{day}}</th>
             </tr>
             </thead>
             <tbody>
@@ -263,7 +257,7 @@
                     if(this.event_index === '-1'){
                         this.cur_day_event.push(sch_obj);
                     } else {
-                        this.cur_day_event[this.event_index] = sch_obj;
+                        this.$set(this.cur_day_event, this.event_index, sch_obj);
                     }
                     this.$emit('update_schedule',this.cur_day_event, this.cur_day);
                     this.hideModal();
